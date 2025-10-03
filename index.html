@@ -3,12 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>쿠파의 피치 공주 잡기 게임</title>
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --panel:#ffffffcc; --accent:#ff4f81; --ink:#333;
-      --shadow:0 4px 14px rgba(0,0,0,0.25); --radius:14px;
-    }
     body {
       margin: 0;
       background: #000;
@@ -22,8 +18,7 @@
       width: 800px;
       height: 600px;
       background: url("https://i.pinimg.com/736x/a8/1e/27/a81e27defcb9f945ee78a7a247b808cc.jpg") center/cover no-repeat;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
+      border-radius: 12px;
       position: relative;
       overflow: hidden;
     }
@@ -42,19 +37,37 @@
     .princess:hover {
       transform: scale(1.1);
     }
-    #scoreboard, #timer {
+
+    /* 공통 패널 디자인 */
+    .infoPanel {
       position: absolute;
-      top: 15px;
-      font-size: 14px;
-      background: var(--panel);
-      padding: 6px 12px;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      color: var(--ink);
-      font-weight: 600;
+      top: 20px;
+      background: linear-gradient(to bottom, #0b223a, #001020);
+      border: 2px solid #003366;
+      border-radius: 6px;
+      padding: 6px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: inset 0 0 6px #000, 0 0 6px rgba(0,0,0,0.6);
     }
-    #scoreboard { left: 15px; }
-    #timer { right: 15px; }
+    #scorePanel { left: 20px; }
+    #timePanel { right: 20px; width: 180px; justify-content: space-between; }
+
+    .label {
+      color: #fff;
+      font-size: 12px;
+      font-family: sans-serif;
+    }
+    .value {
+      font-family: 'Orbitron', monospace;
+      font-size: 28px;
+      color: #FFD700;
+      letter-spacing: 2px;
+      text-shadow: 0 0 6px rgba(255, 215, 0, 0.8), 0 0 12px rgba(255, 215, 0, 0.5);
+      min-width: 80px;
+      text-align: right;
+    }
 
     /* 빠른 공주 효과 */
     .fast {
@@ -69,8 +82,8 @@
       transform: translate(-50%, -50%);
       background: white;
       padding: 25px 35px;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
       text-align: center;
       display: none;
       z-index: 1000;
@@ -78,21 +91,21 @@
     }
     .popup h2 {
       margin: 0 0 15px;
-      color: var(--accent);
+      color: #ff4f81;
       font-size: 20px;
       white-space: nowrap;
     }
     .popup p {
       margin: 8px 0;
       font-size: 14px;
-      color: var(--ink);
+      color: #333;
     }
     .popup button {
       margin-top: 10px;
       padding: 8px 16px;
       border: none;
       border-radius: 8px;
-      background: var(--accent);
+      background: #ff4f81;
       color: white;
       font-size: 14px;
       cursor: pointer;
@@ -106,13 +119,23 @@
 <body>
   <div id="game-container">
     <div id="game-area"></div>
-    <div id="scoreboard">잡은 피치 공주: 0</div>
-    <div id="timer">남은 시간: 30</div>
+
+    <!-- 점수 패널 -->
+    <div id="scorePanel" class="infoPanel">
+      <div class="label">잡은 피치 공주</div>
+      <div id="scoreValue" class="value">0</div>
+    </div>
+
+    <!-- 시간 패널 -->
+    <div id="timePanel" class="infoPanel">
+      <div class="label">남은 시간</div>
+      <div id="timeValue" class="value">30.00</div>
+    </div>
 
     <!-- 규칙 팝업 -->
     <div id="rulePopup" class="popup" style="display:block;">
       <h2>게임 규칙</h2>
-      <p>1. 30초 안에 20점을 획득해야 합니다.</p>
+      <p>1. 30초 안에 20점을 달성해야 합니다.</p>
       <p>2. 피치 공주를 잡으면 점수가 증가합니다.</p>
       <p>3. 다른 공주를 잡으면 점수가 감소합니다.</p>
       <p>4. 빠르게 이동하는 피치 공주를 잡으면 점수가 많이 증가합니다.</p>
@@ -127,7 +150,8 @@
 
     <!-- 성공 팝업2 -->
     <div id="popup2" class="popup">
-      <h2>문장1</h2>
+      <h2>힌트 문장 5</h2>
+      <p>다리 난간에는 불꽃 모양의 조각상이 줄지어 서 있다.</p>
       <button onclick="closePopup()">닫기</button>
     </div>
 
@@ -140,36 +164,24 @@
 
   <script>
     const gameArea = document.getElementById("game-area");
-    const scoreboard = document.getElementById("scoreboard");
-    const timerDisplay = document.getElementById("timer");
+    const scoreValue = document.getElementById("scoreValue");
+    const timeValue = document.getElementById("timeValue");
     const popup1 = document.getElementById("popup1");
     const popup2 = document.getElementById("popup2");
     const failPopup = document.getElementById("failPopup");
     const rulePopup = document.getElementById("rulePopup");
 
     let score = 0;
-    let timeLeft = 30;
+    let timeLeft = 30.00;
     let gameInterval, spawnInterval;
     const targetScore = 20;
     let gameRunning = false;
 
     const princesses = [
-      {
-        name: "peach",
-        img: "https://www.nicepng.com/png/full/168-1685188_princess-peach-clipart-new-super-mario-bros-princess.png"
-      },
-      {
-        name: "elsa",
-        img: "https://www.nicepng.com/png/full/881-8812197_adesivo-frozen-elsa-princess-elsa.png"
-      },
-      {
-        name: "snowwhite",
-        img: "https://www.nicepng.com/png/full/328-3286991_snow-white-disney-png.png"
-      },
-      {
-        name: "cinderella",
-        img: "https://www.nicepng.com/png/full/6-65975_cinderella-cinderella-png.png"
-      }
+      { name: "peach", img: "https://www.nicepng.com/png/full/168-1685188_princess-peach-clipart-new-super-mario-bros-princess.png" },
+      { name: "elsa", img: "https://www.nicepng.com/png/full/881-8812197_adesivo-frozen-elsa-princess-elsa.png" },
+      { name: "snowwhite", img: "https://www.nicepng.com/png/full/328-3286991_snow-white-disney-png.png" },
+      { name: "cinderella", img: "https://www.nicepng.com/png/full/6-65975_cinderella-cinderella-png.png" }
     ];
 
     function isOverlap(x, y, others, size = 80) {
@@ -227,14 +239,14 @@
         princess.addEventListener("click", () => {
           if (princessData.name === "peach") {
             if (isFast) {
-              score += 3; // 빠른 피치 → +3점
+              score += 3;
             } else {
-              score++; // 일반 피치 → +1점
+              score++;
             }
           } else {
-            score = Math.max(0, score - 1); // 다른 공주 → -1점
+            score = Math.max(0, score - 1);
           }
-          scoreboard.textContent = "잡은 피치 공주: " + score;
+          scoreValue.textContent = score;
           if (score >= targetScore) {
             endGame(true);
           }
@@ -271,12 +283,15 @@
       gameRunning = true;
 
       gameInterval = setInterval(() => {
-        timeLeft--;
-        timerDisplay.textContent = "남은 시간: " + timeLeft;
+        timeLeft -= 0.01;
         if (timeLeft <= 0) {
+          clearInterval(gameInterval);
+          timeValue.textContent = "0.00";
           endGame(false);
+        } else {
+          timeValue.textContent = timeLeft.toFixed(2);
         }
-      }, 1000);
+      }, 10);
 
       spawnInterval = setInterval(spawnPrincesses, 1300);
     }
